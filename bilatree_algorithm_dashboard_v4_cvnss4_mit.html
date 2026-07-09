@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THUẬT TOÁN BILATREE · CVNSS4.0 · LIVE Dashboard</title>
+  <style>
+    /* ── reset & base ── */
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #070e1a;
+      color: #e8f4ff;
+      padding: 16px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 1500px;
+      width: 100%;
+    }
+
+    /* ── cards ── */
+    .card {
+      background: rgba(13, 27, 45, 0.85);
+      border: 1px solid rgba(176, 213, 255, 0.12);
+      border-radius: 22px;
+      padding: 18px 20px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(8px);
+    }
+
+    /* ── header ── */
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: clamp(1.6rem, 3.6vw, 2.8rem);
+      font-weight: 950;
+      background: linear-gradient(135deg, #e7f6ff, #69d6ff 34%, #55e79d 72%, #ffd66c 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+    .header .sub {
+      color: #aac8e5;
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+    .header .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      border-radius: 40px;
+      border: 1px solid rgba(176, 213, 255, 0.15);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #cbe2f5;
+    }
+    .badge .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .badge .dot.green { background: #39d98a; box-shadow: 0 0 12px rgba(57,217,138,0.6); }
+    .badge .dot.red { background: #ff6961; box-shadow: 0 0 12px rgba(255,105,97,0.6); }
+    .badge .dot.gold { background: #ffd166; box-shadow: 0 0 12px rgba(255,209,102,0.6); }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(90px, 1fr));
+      gap: 12px;
+      min-width: 280px;
+    }
+    .kpi {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(176, 213, 255, 0.08);
+      border-radius: 16px;
+      padding: 10px 14px;
+      text-align: center;
+    }
+    .kpi .label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: #8eb4d4; }
+    .kpi .value { font-size: 1.2rem; font-weight: 950; margin-top: 2px; }
+
+    /* ── pipeline ── */
+    .pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 4px;
+      padding: 6px 0;
+    }
+    .pipeline .step {
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(176, 213, 255, 0.08);
+      color: #7fa3c5;
+      white-space: nowrap;
+      transition: 0.25s;
+    }
+    .pipeline .step.active {
+      background: #2b7cf0;
+      border-color: #5cbcff;
+      color: #fff;
+      box-shadow: 0 0 20px rgba(43, 124, 240, 0.3);
+    }
+    .pipeline .step.done {
+      background: rgba(57, 217, 138, 0.12);
+      border-color: rgba(57, 217, 138, 0.25);
+      color: #39d98a;
+    }
+    .pipeline .arrow {
+      color: #5a7f9f;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    /* ── grid layout ── */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr 340px;
+      gap: 18px;
+      margin-top: 14px;
+      align-items: start;
+    }
+
+    /* left column */
+    .left-col { display: flex; flex-direction: column; gap: 18px; }
+
+    /* center column – LIVE area */
+    .live-area {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .tree-panel {
+      background: radial-gradient(ellipse at 50% 0%, #0f2440, #060d18);
+      border-radius: 20px;
+      border: 1px solid rgba(176, 213, 255, 0.08);
+      padding: 10px;
+      position: relative;
+    }
+    .tree-panel svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1120 / 600;
+      background: transparent;
+    }
+    .tree-panel .tree-caption {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #8aacc9;
+      margin-top: 6px;
+    }
+    .tree-panel .legend-overlay {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .tree-panel .legend-overlay .item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #b5d0ea;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px 10px;
+      border-radius: 30px;
+      border: 1px solid rgba(176, 213, 255, 0.1);
+    }
+    .tree-panel .legend-overlay .sw {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+    .tree-panel .legend-overlay .sw.green { background: #39d98a; }
+    .tree-panel .legend-overlay .sw.red { background: #ff6961; }
+    .tree-panel .legend-overlay .sw.gold { background: #ffd166; }
+
+    /* live signal panel */
+    .live-signal {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+    }
+    .signal-main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .signal-lamp {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 18px;
+      border: 1px solid rgba(176, 213, 255, 0.06);
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .signal-lamp .lamp {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 8px;
+      border: 3px solid rgba(255, 255, 255, 0.08);
+      background: radial-gradient(circle at 35% 30%, #3f556a, #1a2f44);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+      transition: all 0.12s;
+    }
+    .signal-lamp .lamp.on-dot {
+      background: radial-gradient(circle at 35% 30%, #c6ffdf, #39d98a 40%, #1a8f54 80%);
+      box-shadow: 0 0 30px rgba(57, 217, 138, 0.6), inset 0 0 30px rgba(255, 255, 255, 0.15);
+    }
+    .signal-lamp .lamp.on-dash {
+      background: radial-gradient(circle at 35% 30%, #ffd6d0, #ff6961 40%, #bf3f3a 80%);
+      box-shadow: 0 0 30px rgba(255, 105, 97, 0.6), inset 0 0 30px rgba(255, 255, 255, 0.15);
+    }
+    .signal-lamp .label {
+      font-weight: 850;
+      font-size: 1rem;
+    }
+    .signal-lamp .sub {
+      font-size: 0.7rem;
+      color: #8db2d0;
+    }
+
+    .signal-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-content: start;
+    }
+    .info-box {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 14px;
+      padding: 10px 12px;
+      border: 1px solid rgba(176, 213, 255, 0.06);
+    }
+    .info-box .k { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7fa3c5; }
+    .info-box .v { font-weight: 950; font-size: 0.95rem; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+    .pulse-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 60px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 16px;
+      border: 1px solid rgba(176, 213, 255, 0.06);
+      grid-column: 1 / -1;
+    }
+    .pulse-bars .bar {
+      flex: 1;
+      min-width: 6px;
+      border-radius: 6px 6px 3px 3px;
+      background: linear-gradient(180deg, #2a4a6a, #1a2f44);
+      transition: height 0.1s, background 0.1s, box-shadow 0.1s;
+      height: 12px;
+    }
+    .pulse-bars .bar.dot-live {
+      background: linear-gradient(180deg, #81ffc0, #2bd477);
+      box-shadow: 0 0 16px rgba(57, 217, 138, 0.4);
+    }
+    .pulse-bars .bar.dash-live {
+      background: linear-gradient(180deg, #ffb9b0, #ff6d62);
+      box-shadow: 0 0 16px rgba(255, 105, 97, 0.4);
+    }
+
+    .signal-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 40px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(176, 213, 255, 0.06);
+      font-size: 0.8rem;
+      font-weight: 700;
+      grid-column: 1 / -1;
+    }
+    .signal-status .led {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #3d5a78;
+      margin-right: 6px;
+      transition: 0.1s;
+    }
+    .signal-status .led.on-dot { background: #39d98a; box-shadow: 0 0 20px rgba(57, 217, 138, 0.7); }
+    .signal-status .led.on-dash { background: #ff6961; box-shadow: 0 0 20px rgba(255, 105, 97, 0.7); }
+    .signal-status .play-controls {
+      display: flex;
+      gap: 6px;
+    }
+    .signal-status .play-controls button {
+      border: none;
+      border-radius: 40px;
+      padding: 6px 16px;
+      font-weight: 800;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .signal-status .play-controls button.green { background: #39d98a; color: #06101a; }
+    .signal-status .play-controls button.green:hover { filter: brightness(1.1); }
+    .signal-status .play-controls button.red { background: #ff6961; color: #fff; }
+    .signal-status .play-controls button.red:hover { filter: brightness(1.1); }
+    .signal-status .play-controls button.gold { background: #ffd166; color: #06101a; }
+    .signal-status .play-controls button.gold:hover { filter: brightness(1.1); }
+
+    /* bitstream log */
+    .bitstream-log {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 16px;
+      padding: 10px 12px;
+      border: 1px solid rgba(176, 213, 255, 0.06);
+      max-height: 140px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      word-break: break-all;
+      grid-column: 1 / -1;
+    }
+    .bitstream-log .emit-log {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 30px;
+      margin: 2px 4px 2px 0;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(176, 213, 255, 0.06);
+      transition: 0.15s;
+    }
+    .bitstream-log .emit-log.active {
+      background: rgba(255, 209, 102, 0.15);
+      border-color: #ffd166;
+      box-shadow: 0 0 16px rgba(255, 209, 102, 0.15);
+    }
+    .bitstream-log .emit-log .tok {
+      color: #ffd166;
+      font-weight: 800;
+    }
+    .bitstream-log .emit-log .esc { color: #ff9a9a; }
+
+    /* right column */
+    .right-col { display: flex; flex-direction: column; gap: 18px; }
+
+    .table-wrap { overflow-x: auto; border-radius: 16px; border: 1px solid rgba(176, 213, 255, 0.08); max-height: 400px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    th, td { padding: 6px 8px; border-bottom: 1px solid rgba(176, 213, 255, 0.06); text-align: left; }
+    th { position: sticky; top: 0; background: #10233a; color: #cfe7ff; font-weight: 800; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+    .chip { display: inline-block; padding: 2px 10px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; background: rgba(255, 209, 102, 0.12); border: 1px solid rgba(255, 209, 102, 0.2); color: #ffe497; }
+    .chip.esc { background: rgba(255, 105, 97, 0.12); border-color: rgba(255, 105, 97, 0.2); color: #ffb0ab; }
+
+    .theory-box { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(176, 213, 255, 0.06); border-radius: 16px; padding: 12px 14px; font-size: 0.82rem; color: #b6d2ec; }
+    .theory-box b { color: #fff; }
+
+    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    button {
+      border: none;
+      border-radius: 40px;
+      padding: 8px 16px;
+      font-weight: 800;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: 0.15s;
+      background: #2b7cf0;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(43, 124, 240, 0.25);
+    }
+    button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    button.green { background: #39d98a; color: #06101a; box-shadow: 0 4px 16px rgba(57, 217, 138, 0.25); }
+    button.red { background: #ff6961; color: #fff; box-shadow: 0 4px 16px rgba(255, 105, 97, 0.25); }
+    button.gold { background: #ffd166; color: #06101a; box-shadow: 0 4px 16px rgba(255, 209, 102, 0.25); }
+    button.alt { background: #3a5a7a; box-shadow: 0 4px 16px rgba(58, 90, 122, 0.2); }
+
+    textarea {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(176, 213, 255, 0.1);
+      border-radius: 16px;
+      color: #e8f4ff;
+      padding: 10px 12px;
+      font: inherit;
+      resize: vertical;
+      min-height: 72px;
+    }
+    textarea:focus { outline: none; border-color: #5cbcff; box-shadow: 0 0 0 3px rgba(92, 188, 255, 0.15); }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-box { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(176, 213, 255, 0.06); border-radius: 14px; padding: 8px 12px; text-align: center; }
+    .stat-box .sl { font-size: 0.6rem; text-transform: uppercase; color: #8eb4d4; }
+    .stat-box .sv { font-size: 1.1rem; font-weight: 950; margin-top: 2px; }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .tiny { font-size: 0.7rem; color: #8eb4d4; }
+
+    /* paper mode */
+    body.paper-mode {
+      background: #eef4fb;
+      color: #1c2d40;
+    }
+    body.paper-mode .card { background: #ffffff; border-color: #d8e5f2; color: #1b2b3a; }
+    body.paper-mode .header h1 { background: linear-gradient(135deg, #1d5bd4, #2b93de 38%, #17a36c 72%, #c58f18 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    body.paper-mode .badge, body.paper-mode .pipeline .step, body.paper-mode .stat-box, body.paper-mode .signal-lamp, body.paper-mode .info-box, body.paper-mode .bitstream-log, body.paper-mode .theory-box, body.paper-mode .kpi, body.paper-mode .tree-panel, body.paper-mode .live-signal .signal-lamp, body.paper-mode .pulse-bars, body.paper-mode .signal-status { background: #f8fbff; border-color: #d7e5f3; color: #1c2d40; }
+    body.paper-mode .pipeline .step.active { background: #2b7cf0; color: #fff; }
+    body.paper-mode .tree-panel { background: linear-gradient(180deg, #f8fbff, #edf4fb); }
+    body.paper-mode .tree-panel .legend-overlay .item { background: rgba(0,0,0,0.04); }
+    body.paper-mode .kpi .label, body.paper-mode .stat-box .sl, body.paper-mode .info-box .k, body.paper-mode .tiny { color: #4a6a8a; }
+    body.paper-mode .kpi .value, body.paper-mode .stat-box .sv, body.paper-mode .info-box .v { color: #18314a; }
+    body.paper-mode .tree-panel svg .darkText { fill: #1d2e3d; }
+    body.paper-mode .tree-panel svg .leafText { fill: #1d2e3d; }
+    body.paper-mode .tree-panel svg .rootText { fill: #1d2e3d; }
+
+    @media (max-width: 1200px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .live-signal { grid-template-columns: 1fr; }
+      .signal-main { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 700px) {
+      .header { flex-direction: column; align-items: stretch; }
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+      .signal-main { grid-template-columns: 1fr; }
+      .live-signal { grid-template-columns: 1fr; }
+    }
+
+
+    /* ── UX/UI upgrade: Bilatree v4 ── */
+    :root {
+      --bg0: #050a13;
+      --card0: rgba(13, 27, 45, 0.86);
+      --line0: rgba(176, 213, 255, 0.12);
+      --text0: #e8f4ff;
+      --muted0: #9bbbd8;
+      --blue0: #2b7cf0;
+      --green0: #39d98a;
+      --red0: #ff6961;
+      --gold0: #ffd166;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(43,124,240,.20), transparent 28%),
+        radial-gradient(circle at 82% 18%, rgba(57,217,138,.13), transparent 26%),
+        radial-gradient(circle at 48% 92%, rgba(255,209,102,.10), transparent 30%),
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+      background-size: auto, auto, auto, 42px 42px, 42px 42px;
+      mask-image: linear-gradient(to bottom, #000, rgba(0,0,0,.72));
+      z-index: -1;
+    }
+    .card { position: relative; overflow: hidden; }
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(255,255,255,.08), transparent 28%, transparent 72%, rgba(255,255,255,.025));
+      opacity: .55;
+    }
+    .hero-copy { max-width: 920px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(92,188,255,.24);
+      background: rgba(92,188,255,.10);
+      color: #bfe7ff;
+      font-size: .68rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .header h1 { text-transform: uppercase; }
+    .header .sub { max-width: 820px; line-height: 1.45; }
+    .dashboard-grid { grid-template-columns: minmax(300px, 340px) minmax(520px, 1fr) minmax(320px, 360px); }
+    textarea { line-height: 1.55; transition: border-color .18s, box-shadow .18s, background .18s; }
+    textarea:hover { border-color: rgba(92,188,255,.26); background: rgba(255,255,255,.055); }
+    button { user-select: none; }
+    button:focus-visible, textarea:focus-visible {
+      outline: 3px solid rgba(255,209,102,.42);
+      outline-offset: 2px;
+    }
+    .progress-rail {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      border: 1px solid rgba(176,213,255,.10);
+      background: rgba(0,0,0,.22);
+      box-shadow: inset 0 0 12px rgba(0,0,0,.25);
+    }
+    .progress-rail > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #39d98a, #5cbcff, #ffd166);
+      box-shadow: 0 0 18px rgba(255,209,102,.35);
+      transition: width .2s ease;
+    }
+    .source-footer {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      font-size: .88rem;
+      color: #bdd7ee;
+    }
+    .source-footer b { color: #fff; }
+    .source-footer .license-pill {
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(255,209,102,.14);
+      color: #ffe497;
+      border: 1px solid rgba(255,209,102,.26);
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .ux-note {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: rgba(92,188,255,.08);
+      border: 1px solid rgba(92,188,255,.14);
+      color: #b9d8f2;
+      font-size: .75rem;
+      line-height: 1.45;
+    }
+    ::selection { background: rgba(255,209,102,.32); color: #fff; }
+    body.paper-mode::before { opacity: .25; }
+    body.paper-mode .source-footer { color: #425c76; }
+    body.paper-mode .source-footer b { color: #14283d; }
+    body.paper-mode .source-footer .license-pill { background: #fff8dd; color: #8a640e; border-color: #ead38a; }
+    @media (max-width: 700px) {
+      .source-footer { grid-template-columns: 1fr; }
+      .source-footer .license-pill { justify-self: start; }
+      .tree-panel .legend-overlay { position: static; margin: 8px 4px 0; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .card { box-shadow: none; border-color: #d6e2ee; background: #fff; }
+      button { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="container" id="app">
+  <!-- header -->
+  <header class="header card">
+    <div class="hero-copy">
+      <div class="eyebrow">LIVE DASHBOARD · CVNSS4.0 / BASE27 / 4‑BIT</div>
+      <h1>🌳 THUẬT TOÁN BILATREE</h1>
+      <div class="sub">Mô phỏng mã hóa 4‑bit trực quan bằng cây, âm thanh, ánh sáng và nhật ký bitstream · 15 token + ESC · round‑trip lossless</div>
+      <div class="badge-row">
+        <span class="badge"><span class="dot green"></span>0 = DOT</span>
+        <span class="badge"><span class="dot red"></span>1 = DASH</span>
+        <span class="badge"><span class="dot gold"></span>15 TOKEN + ESC</span>
+        <span class="badge">2⁴ = 16 &lt; 27</span>
+        <span class="badge" id="converterBadge">CVNSS4.0 PRO</span>
+        <span class="badge">MIT LICENSE</span>
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">Trạng thái</div><div class="value" id="kpiState">READY</div></div>
+      <div class="kpi"><div class="label">Round‑trip</div><div class="value" id="kpiRound">—</div></div>
+      <div class="kpi"><div class="label">Bitstream</div><div class="value" id="kpiBits">0</div></div>
+      <div class="kpi"><div class="label">Tiết kiệm</div><div class="value" id="kpiSave">0%</div></div>
+    </div>
+  </header>
+
+  <!-- pipeline -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="pipeline" id="pipelineFlow"></div>
+  </div>
+
+  <!-- main grid -->
+  <div class="dashboard-grid">
+    <!-- left column -->
+    <div class="left-col">
+      <div class="card">
+        <div class="tiny" style="margin-bottom:4px;">Tiếng Việt đầu vào</div>
+        <textarea id="viInput">Tôi yêu Việt Nam và muốn mô phỏng cây 4 bit theo CVNSS4.0 để minh họa rõ cơ chế Bilatree-CSS bằng Morse code.</textarea>
+        <div class="ux-note">Gợi ý: nhập tiếng Việt có dấu, bấm <b>Mã hóa</b>, sau đó dùng <b>Play all</b> để xem ánh sáng chạy trên cây và nghe tín hiệu DOT/DASH.</div>
+        <div class="btn-group">
+          <button id="btnEncode">▶ Mã hóa</button>
+          <button class="green" id="btnDemo">📂 Ví dụ</button>
+          <button class="gold" id="btnStep">⏭ Phát từng token</button>
+          <button class="green" id="btnPlay">🔊 Play all</button>
+          <button class="red" id="btnStop">⏹ Dừng</button>
+        </div>
+        <div style="margin-top:10px;">
+          <div class="tiny">CVNSS4.0 / Base27 clean</div>
+          <textarea id="cvnssInput" readonly style="min-height:40px;"></textarea>
+        </div>
+        <div style="margin-top:10px;">
+          <div class="tiny">Decoded output</div>
+          <div class="mono" style="background:rgba(0,0,0,0.2);border-radius:14px;padding:8px 12px;border:1px solid rgba(176,213,255,0.06);" id="decodedBox"></div>
+          <div id="roundTripLine" style="margin-top:4px;font-size:0.8rem;"></div>
+        </div>
+        <div class="stats-grid" style="margin-top:10px;" id="statsGrid"></div>
+        <div class="btn-group" style="margin-top:12px;">
+          <button class="alt" id="btnPaperMode">📄 Paper mode</button>
+          <button class="green" id="btnCopyCvnss">📋 Copy CVNSS</button>
+          <button class="gold" id="btnCopyBits">📋 Copy bits</button>
+          <button class="red" id="btnClear">🧹 Xóa</button>
+          <button class="green" id="btnExportSvg">⬇ SVG tree</button>
+          <button class="gold" id="btnExportPng">🖼 PNG</button>
+          <button class="alt" id="btnPrint">🖨 PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- center column – LIVE area -->
+    <div class="live-area">
+      <div class="card tree-panel">
+        <svg id="treeSvg" viewBox="0 0 1120 600" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="legend-overlay">
+          <span class="item"><span class="sw green"></span> Dot · 0</span>
+          <span class="item"><span class="sw red"></span> Dash · 1</span>
+          <span class="item"><span class="sw gold"></span> Active path</span>
+        </div>
+        <div class="tree-caption">Cây Morse 4 tầng · khi phát, đường sáng vàng chạy từ gốc đến lá tương ứng</div>
+      </div>
+
+      <div class="card live-signal">
+        <div class="signal-main">
+          <div class="signal-lamp">
+            <div class="lamp" id="dotLamp"></div>
+            <div class="label">DOT · 0</div>
+            <div class="sub">beep ngắn · xanh</div>
+          </div>
+          <div class="signal-lamp">
+            <div class="lamp" id="dashLamp"></div>
+            <div class="label">DASH · 1</div>
+            <div class="sub">beep dài · đỏ</div>
+          </div>
+          <div class="signal-info">
+            <div class="info-box"><div class="k">Token hiện tại</div><div class="v" id="currentToken">—</div></div>
+            <div class="info-box"><div class="k">Emit #</div><div class="v" id="currentIndex">0 / 0</div></div>
+            <div class="info-box"><div class="k">Loại</div><div class="v" id="currentType">—</div></div>
+            <div class="info-box"><div class="k">Âm thanh</div><div class="v" id="audioState">ready</div></div>
+          </div>
+          <div class="pulse-bars" id="pulseBars"></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="signal-status">
+            <span><span class="led" id="statusLed"></span><span id="statusText">Idle</span></span>
+            <span class="play-controls">
+              <button class="green" id="btnPlaySmall">▶</button>
+              <button class="gold" id="btnStepSmall">⏭</button>
+              <button class="red" id="btnStopSmall">⏹</button>
+            </span>
+          </div>
+          <div class="progress-rail" aria-label="Tiến độ phát bitstream"><span id="playProgress"></span></div>
+          <div class="bitstream-log" id="bitstreamLog"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- right column -->
+    <div class="right-col">
+      <div class="card">
+        <div class="tiny" style="margin-bottom:6px;">15 token trực tiếp + ESC</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>4‑bit</th><th>Morse</th><th>Token</th><th>freq</th><th>gain</th></tr></thead>
+            <tbody id="tokenTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tiny" style="margin-bottom:6px;">Tóm tắt học thuật</div>
+        <div class="theory-box"><b>2⁴ = 16 &lt; 27</b> → không thể mã hóa toàn bộ Base27 bằng 4-bit cố định. Giải pháp: <b>15 token + ESC</b>. Thống kê Huffman dùng để chọn token theo <b>gain</b> = freq × (5·len − 4). Encoder dùng DP để tối ưu chi phí bit. Dashboard biến bitstream thành ánh sáng, âm thanh và đường đi trên cây.</div>
+      </div>
+      <div class="card">
+        <div class="tiny" style="margin-bottom:4px;">Checksum</div>
+        <div class="mono" style="background:rgba(0,0,0,0.2);border-radius:14px;padding:6px 12px;border:1px solid rgba(176,213,255,0.06);" id="checksumDisplay">—</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="source-footer card">
+    <div><b>Nguồn:</b> Dự án CVNSS4.0, Long Ngo phát triển, được tài trợ bởi NNC ngôn ngữ Trần Tư Bình. Mã nguồn theo giấy phép MIT.</div>
+    <div class="license-pill">MIT · CVNSS4.0 · BILATREE</div>
+  </footer>
+</div>
+
+<script>
+/* CVNSS4.0 converter v4.1.0-pro - embedded from supplied file */
+const CVNSSConverter=(function(){"use strict";const VERSION="4.1.0-pro";const RULESET="CVNSS4.0 official formula + 56-rime patch + GI/i reverse fix";const consonants={cqn:["ngh","ng","ch","gh","kh","nh","ph","th","tr","gi","qu","b","k","d","đ","g","h","c","l","m","n","r","s","t","v","x"],cvn:["w","w","ch","g","k","nh","f","th","tr","j","q","b","c","z","d","g","h","c","l","m","n","r","s","t","v","x"]};const vowels={cqn:["a","à","ả","ã","á","ạ","oa","òa","ỏa","õa","óa","ọa","oà","oả","oã","oá","oạ","oác","oạc","oách","oạch","oai","oài","oải","oãi","oái","oại","oao","oào","oảo","oão","oáo","oạo","oáp","oạp","oát","oạt","oắt","oặt","oắc","oặc","oăn","oằn","oẳn","oẵn","oắn","oặn","oăm","oằm","oẳm","oẵm","oắm","oặm","oăng","oằng","oẳng","oẵng","oắng","oặng","oay","oày","oảy","oãy","oáy","oạy","ác","ạc","ách","ạch","ai","ài","ải","ãi","ái","ại","am","àm","ảm","ãm","ám","ạm","an","àn","ản","ãn","án","ạn","oan","oàn","oản","oãn","oán","oạn","oanh","oành","oảnh","oãnh","oánh","oạnh","ang","àng","ảng","ãng","áng","ạng","oang","oàng","oảng","oãng","oáng","oạng","anh","ành","ảnh","ãnh","ánh","ạnh","ao","ào","ảo","ão","áo","ạo","áp","ạp","át","ạt","au","àu","ảu","áu","ạu","ay","ày","ảy","ãy","áy","ạy","ắc","ặc","ăm","ằm","ẳm","ẵm","ắm","ặm","ăn","ằn","ẳn","ẵn","ắn","ặn","ăng","ằng","ẳng","ẵng","ắng","ặng","ắp","ặp","ắt","ặt","ấc","ậc","âm","ầm","ẩm","ẫm","ấm","ậm","ân","ần","ẩn","ẫn","ấn","ận","âng","ầng","ẩng","ẫng","ấng","ậng","uân","uần","uẩn","uẫn","uấn","uận","uâng","uầng","uẩng","uẫng","uấng","uậng","ấp","ập","ất","ật","uất","uật","âu","ầu","ẩu","ẫu","ấu","ậu","ây","ầy","ẩy","ẫy","ấy","ậy","uây","uầy","uẩy","uẫy","uấy","uậy","e","è","ẻ","ẽ","é","ẹ","oe","òe","ỏe","õe","óe","ọe","éc","ẹc","em","èm","ẻm","ẽm","ém","ẹm","en","èn","ẻn","ẽn","én","ẹn","oen","oèn","oẻn","oẽn","oén","oẹn","eng","èng","ẻng","ẽng","éng","ẹng","eo","èo","ẻo","ẽo","éo","ẹo","oeo","oèo","oẻo","oẽo","oéo","oẹo","ép","ẹp","ét","ẹt","oét","oẹt","ê","ề","ể","ễ","ế","ệ","uê","uề","uể","uễ","uế","uệ","ếch","ệch","uếch","uệch","êm","ềm","ểm","ễm","ếm","ệm","ên","ền","ển","ễn","ến","ện","ênh","ềnh","ểnh","ễnh","ếnh","ệnh","uênh","uềnh","uểnh","uễnh","uếnh","uệnh","ếp","ệp","ết","ệt","êu","ều","ểu","ễu","ếu","ệu","i","ì","ỉ","ĩ","í","ị","uy","ùy","ủy","ũy","úy","ụy","uỳ","uỷ","uỹ","uý","uỵ","ia","ìa","ỉa","ĩa","ía","ịa","uya","íc","ích","ịch","uých","uỵch","iếc","iệc","iêm","iềm","iểm","iễm","iếm","iệm","iên","iền","iển","iễn","iến","iện","uyên","uyền","uyển","uyễn","uyến","uyện","iêng","iềng","iểng","iễng","iếng","iệng","iếp","iệp","iết","iệt","uyết","uyệt","iêu","iều","iểu","iễu","iếu","iệu","yêt","yệt","yên","yền","yển","yễn","yến","yện","yêm","yềm","yểm","yễm","yếm","yệm","yêng","yềng","yểng","yễng","yếng","yệnh","yêu","yều","yểu","yễu","yếu","yệu","im","ìm","ỉm","ĩm","ím","ịm","in","ìn","ỉn","ĩn","ín","ịn","inh","ình","ỉnh","ĩnh","ính","ịnh","uynh","uỳnh","uỷnh","uỹnh","uýnh","uỵnh","íp","ịp","uýp","uỵp","ít","ịt","uýt","uỵt","iu","ìu","ỉu","ĩu","íu","ịu","uyu","uỳu","uỷu","uỹu","uýu","uỵu","uỳn","uỷn","uỹn","uýn","uỵn","o","ò","ỏ","õ","ó","ọ","óc","ọc","oi","òi","ỏi","õi","ói","ọi","om","òm","ỏm","õm","óm","ọm","on","òn","ỏn","õn","ón","ọn","ong","òng","ỏng","õng","óng","ọng","oóc","oong","oòng","oỏng","oõng","oóng","oòng","oọng","óp","ọp","ót","ọt","ô","ồ","ổ","ỗ","ố","ộ","ốc","ộc","ôi","ồi","ổi","ỗi","ối","ội","ôm","ồm","ổm","ỗm","ốm","ộm","ôn","ồn","ổn","ỗn","ốn","ộn","ông","ồng","ổng","ỗng","ống","ộng","ốp","ộp","ốt","ột","ơ","ờ","ở","ỡ","ớ","ợ","ơi","ời","ởi","ỡi","ới","ợi","ơm","ờm","ởm","ỡm","ớm","ợm","ơn","ờn","ởn","ỡn","ớn","ợn","ơng","ờng","ởng","ỡng","ớng","ợng","ớp","ợp","ớt","ợt","u","ù","ủ","ũ","ú","ụ","ua","ùa","ủa","ũa","úa","ụa","úc","ục","ui","ùi","ủi","ũi","úi","ụi","um","ùm","ủm","ũm","úm","ụm","un","ùn","ủn","ũn","ún","ụn","ung","ùng","ủng","ũng","úng","ụng","uơ","uờ","uở","uỡ","uớ","uợ","uơn","uờn","uởn","uỡn","uớn","uợn","uớt","uợt","uốc","uộc","uôi","uồi","uổi","uỗi","uối","uội","uôm","uồm","uổm","uỗm","uốm","uộm","uôn","uồn","uổn","uỗn","uốn","uộn","uông","uồng","uổng","uỗng","uống","uộng","uốt","uột","uốp","uộp","úp","ụp","út","ụt","ư","ừ","ử","ữ","ứ","ự","ưa","ừa","ửa","ữa","ứa","ựa","ức","ực","ưi","ừi","ửi","ữi","ứi","ựi","ưm","ừm","ửm","ữm","ứm","ựm","ưn","ừn","ửn","ữn","ứn","ựn","ưng","ừng","ửng","ững","ứng","ựng","ước","ược","ươi","ười","ưởi","ưỡi","ưới","ượi","ươm","ườm","ưởm","ưỡm","ướm","ượm","ươn","ườn","ưởn","ưỡn","ướn","ượn","ương","ường","ưởng","ưỡng","ướng","ượng","ướp","ượp","ướt","ượt","ươu","ườu","ưởu","ưỡu","ướu","ượu","ứt","ựt","ưu","ừu","ửu","ữu","ứu","ựu","y","ỳ","ỷ","ỹ","ý","ỵ","ỳa","ỷa","ỹa","ýa","ỵa"],cvn:["a","al","az","as","aj","ar","oa","oal","oaz","oas","oaj","oar","oal","oaz","oas","oaj","oar","osj","osr","oakj","oakr","ojp","ojl","ojz","ojs","ojj","ojr","owp","owl","owz","ows","owj","owr","ofj","ofr","odj","odr","adx","adh","asx","ash","alo","alk","alv","alw","alx","alh","avo","avk","avv","avw","avx","avh","azo","azk","azv","azw","azx","azh","ajp","ajl","ajz","ajs","ajj","ajr","ac","acr","akj","akr","ai","ail","aiz","ais","aij","air","am","aml","amz","ams","amj","amr","an","anl","anz","ans","anj","anr","olp","oll","olz","ols","olj","olr","oahp","oahl","oahz","oahs","oahj","oahr","agp","agl","agz","ags","agj","agr","ozp","ozl","ozz","ozs","ozj","ozr","ahp","ahl","ahz","ahs","ahj","ahr","ao","aol","aoz","aos","aoj","aor","ap","apr","at","atr","au","aul","auz","auj","aur","ay","ayl","ayz","ays","ayj","ayr","acx","ach","amo","amk","amv","amw","amx","amh","ano","ank","anv","anw","anx","anh","ago","agk","agv","agw","agx","agh","apx","aph","atx","ath","acb","acf","amy","amd","amq","amg","amb","amf","any","and","anq","ang","anb","anf","agy","agd","agq","agg","agb","agf","aly","ald","alq","alg","alb","alf","azy","azd","azq","azg","azb","azf","apb","apf","atb","atf","adb","adf","auy","aud","auq","aug","aub","auf","ayy","ayd","ayq","ayg","ayb","ayf","ajy","ajd","ajq","ajg","ajb","ajf","e","el","ez","es","ej","er","oe","oel","oez","oes","oej","oer","ec","ecr","em","eml","emz","ems","emj","emr","en","enl","enz","ens","enj","enr","elp","ell","elz","els","elj","elr","egp","egl","egz","egs","egj","egr","eo","eol","eoz","eos","eoj","eor","ewp","ewl","ewz","ews","ewj","ewr","ep","epr","et","etr","edj","edr","ey","ed","eq","eg","eb","ef","uey","ued","ueq","ueg","ueb","uef","ekb","ekf","uekb","uekf","emy","emd","emq","emg","emb","emf","eny","end","enq","eng","enb","enf","ehy","ehd","ehq","ehg","ehb","ehf","uehy","uehd","uehq","uehg","uehb","uehf","epb","epf","etb","etf","euy","eud","euq","eug","eub","euf","i","il","iz","is","ij","ir","y","yl","yz","ys","yj","yr","yl","yz","ys","yj","yr","ia","ial","iaz","ias","iaj","iar","ya","ic","ikj","ikr","ykj","ykr","isb","isf","ivy","ivd","ivq","ivg","ivb","ivf","ily","ild","ilq","ilg","ilb","ilf","yly","yld","ylq","ylg","ylb","ylf","izy","izd","izq","izg","izb","izf","ifb","iff","idb","idf","ydb","ydf","iwy","iwd","iwq","iwg","iwb","iwf","idb","idf","ily","ild","ilq","ilg","ilb","ilf","ivy","ivd","ivq","ivg","ivb","ivf","izy","izd","izq","izg","izb","izf","iwy","iwd","iwq","iwg","iwb","iwf","im","iml","imz","ims","imj","imr","in","inl","inz","ins","inj","inr","ihp","ihl","ihz","ihs","ihj","ihr","yhp","yhl","yhz","yhs","yhj","yhr","ip","ipr","yp","ypr","it","itr","yt","ytr","iu","iul","iuz","ius","iuj","iur","yu","yul","yuz","yus","yuj","yur","ynl","ynz","yns","ynj","ynr","o","ol","oz","os","oj","or","oc","ocr","oi","oil","oiz","ois","oij","oir","om","oml","omz","oms","omj","omr","on","onl","onz","ons","onj","onr","ogp","ogl","ogz","ogs","ogj","ogr","ooc","oog","oogl","oogz","oogs","oogj","oogl","oogr","op","opr","ot","otr","oy","od","oq","og","ob","of","ocb","ocf","oiy","oid","oiq","oig","oib","oif","omy","omd","omq","omg","omb","omf","ony","ond","onq","ong","onb","onf","ogy","ogd","ogq","ogg","ogb","ogf","opb","opf","otb","otf","oo","ok","ov","ow","ox","oh","oio","oik","oiv","oiw","oix","oih","omo","omk","omv","omw","omx","omh","ono","onk","onv","onw","onx","onh","ogo","ogk","ogv","ogw","ogx","ogh","opx","oph","otx","oth","u","ul","uz","us","uj","ur","ua","ual","uaz","uas","uaj","uar","uc","ucr","ui","uil","uiz","uis","uij","uir","um","uml","umz","ums","umj","umr","un","unl","unz","uns","unj","unr","ugp","ugl","ugz","ugs","ugj","ugr","uoo","uok","uov","uow","uox","uoh","olo","olk","olv","olw","olx","olh","odx","odh","usb","usf","ujy","ujd","ujq","ujg","ujb","ujf","uvy","uvd","uvq","uvg","uvb","uvf","uly","uld","ulq","ulg","ulb","ulf","uzy","uzd","uzq","uzg","uzb","uzf","udb","udf","ufb","uff","up","upr","ut","utr","uo","uk","uv","uw","ux","uh","uao","uak","uav","uaw","uax","uah","ucx","uch","uio","uik","uiv","uiw","uix","uih","umo","umk","umv","umw","umx","umh","uno","unk","unv","unw","unx","unh","ugo","ugk","ugv","ugw","ugx","ugh","usx","ush","ujo","ujk","ujv","ujw","ujx","ujh","uvo","uvk","uvv","uvw","uvx","uvh","ulo","ulk","ulv","ulw","ulx","ulh","uzo","uzk","uzv","uzw","uzx","uzh","ufx","ufh","udx","udh","uwo","uwk","uwv","uww","uwx","uwh","utx","uth","uuo","uuk","uuv","uuw","uux","uuh","i","il","iz","is","ij","ir","ial","iaz","ias","iaj","iar"],cvss:["a","al","az","as","aj","ar","oa","oal","oaz","oas","oaj","oar","oal","oaz","oas","oaj","oar","osj","osr","oakj","oakr","ojp","ojl","ojz","ojs","ojj","ojr","owp","owl","owz","ows","owj","owr","ofj","ofr","odj","odr","adx","adh","asx","ash","alo","alk","alv","alw","alx","alh","avo","avk","avv","avw","avx","avh","azo","azk","azv","azw","azx","azh","ajp","ajl","ajz","ajs","ajj","ajr","ac","acr","akj","akr","ai","ail","aiz","ais","aij","air","am","aml","amz","ams","amj","amr","an","anl","anz","ans","anj","anr","olp","oll","olz","ols","olj","olr","oahp","oahl","oahz","oahs","oahj","oahr","agp","agl","agz","ags","agj","agr","ozp","ozl","ozz","ozs","ozj","ozr","ahp","ahl","ahz","ahs","ahj","ahr","ao","aol","aoz","aos","aoj","aor","ap","apr","at","atr","au","aul","auz","auj","aur","ay","ayl","ayz","ays","ayj","ayr","acx","ach","amo","amk","amv","amw","amx","amh","ano","ank","anv","anw","anx","anh","ago","agk","agv","agw","agx","agh","apx","aph","atx","ath","acb","acf","amy","amd","amq","amg","amb","amf","any","and","anq","ang","anb","anf","agy","agd","agq","agg","agb","agf","aly","ald","alq","alg","alb","alf","azy","azd","azq","azg","azb","azf","apb","apf","atb","atf","adb","adf","auy","aud","auq","aug","aub","auf","ayy","ayd","ayq","ayg","ayb","ayf","ajy","ajd","ajq","ajg","ajb","ajf","e","el","ez","es","ej","er","oe","oel","oez","oes","oej","oer","ec","ecr","em","eml","emz","ems","emj","emr","en","enl","enz","ens","enj","enr","elp","ell","elz","els","elj","elr","egp","egl","egz","egs","egj","egr","eo","eol","eoz","eos","eoj","eor","ewp","ewl","ewz","ews","ewj","ewr","ep","epr","et","etr","edj","edr","ey","ed","eq","eg","eb","ef","uey","ued","ueq","ueg","ueb","uef","ekb","ekf","uekb","uekf","emy","emd","emq","emg","emb","emf","eny","end","enq","eng","enb","enf","ehy","ehd","ehq","ehg","ehb","ehf","uehy","uehd","uehq","uehg","uehb","uehf","epb","epf","etb","etf","euy","eud","euq","eug","eub","euf","i","il","iz","is","ij","ir","y","yl","yz","ys","yj","yr","yl","yz","ys","yj","yr","ia","ial","iaz","ias","iaj","iar","ya","ic","ikj","ikr","ykj","ykr","isb","isf","ivy","ivd","ivq","ivg","ivb","ivf","ily","ild","ilq","ilg","ilb","ilf","yly","yld","ylq","ylg","ylb","ylf","izy","izd","izq","izg","izb","izf","ifb","iff","idb","idf","ydb","ydf","iwy","iwd","iwq","iwg","iwb","iwf","idb","idf","ily","ild","ilq","ilg","ilb","ilf","ivy","ivd","ivq","ivg","ivb","ivf","izy","izd","izq","izg","izb","izf","iwy","iwd","iwq","iwg","iwb","iwf","im","iml","imz","ims","imj","imr","in","inl","inz","ins","inj","inr","ihp","ihl","ihz","ihs","ihj","ihr","yhp","yhl","yhz","yhs","yhj","yhr","ip","ipr","yp","ypr","it","itr","yt","ytr","iu","iul","iuz","ius","iuj","iur","yu","yul","yuz","yus","yuj","yur","ynl","ynz","yns","ynj","ynr","o","ol","oz","os","oj","or","oc","ocr","oi","oil","oiz","ois","oij","oir","om","oml","omz","oms","omj","omr","on","onl","onz","ons","onj","onr","ogp","ogl","ogz","ogs","ogj","ogr","ooc","oog","oogl","oogz","oogs","oogj","oogl","oogr","op","opr","ot","otr","oy","od","oq","og","ob","of","ocb","ocf","oiy","oid","oiq","oig","oib","oif","omy","omd","omq","omg","omb","omf","ony","ond","onq","ong","onb","onf","ogy","ogd","ogq","ogg","ogb","ogf","opb","opf","otb","otf","oo","ok","ov","ow","ox","oh","oio","oik","oiv","oiw","oix","oih","omo","omk","omv","omw","omx","omh","ono","onk","onv","onw","onx","onh","ogo","ogk","ogv","ogw","ogx","ogh","opx","oph","otx","oth","u","ul","uz","us","uj","ur","ua","ual","uaz","uas","uaj","uar","uc","ucr","ui","uil","uiz","uis","uij","uir","um","uml","umz","ums","umj","umr","un","unl","unz","uns","unj","unr","ugp","ugl","ugz","ugs","ugj","ugr","uoo","uok","uov","uow","uox","uoh","olo","olk","olv","olw","olx","olh","odx","odh","usb","usf","ujy","ujd","ujq","ujg","ujb","ujf","uvy","uvd","uvq","uvg","uvb","uvf","uly","uld","ulq","ulg","ulb","ulf","uzy","uzd","uzq","uzg","uzb","uzf","udb","udf","ufb","uff","up","upr","ut","utr","uo","uk","uv","uw","ux","uh","uao","uak","uav","uaw","uax","uah","ucx","uch","uio","uik","uiv","uiw","uix","uih","umo","umk","umv","umw","umx","umh","uno","unk","unv","unw","unx","unh","ugo","ugk","ugv","ugw","ugx","ugh","usx","ush","ujo","ujk","ujv","ujw","ujx","ujh","uvo","uvk","uvv","uvw","uvx","uvh","ulo","ulk","ulv","ulw","ulx","ulh","uzo","uzk","uzv","uzw","uzx","uzh","ufx","ufh","udx","udh","uwo","uwk","uwv","uww","uwx","uwh","utx","uth","uuo","uuk","uuv","uuw","uux","uuh","i","il","iz","is","ij","ir","ial","iaz","ias","iaj","iar"]};const BASE_VOWEL_GROUPS=["aàảãáạ","ăằẳẵắặ","âầẩẫấậ","eèẻẽéẹ","êềểễếệ","iìỉĩíị","oòỏõóọ","ôồổỗốộ","ơờởỡớợ","uùủũúụ","ưừửữứự","yỳỷỹýỵ"];const SPECIAL_CHARS=Object.freeze(["`","“","”","<",">","@","-",";","=","…"," ",",",".","?","!",'"',"'","(",")","[","]","{","}","%","#","$","&","_","\\","/","*",":","+","~","^","|","\r\n","\r","\n"]);const CVN_INITIALS=Object.freeze([["ngh","w"],["ng","w"],["ph","f"],["qu","q"],["kh","k"],["gi","j"],["gh","g"],["k","c"],["d","z"],["đ","d"],["ch","ch"],["nh","nh"],["th","th"],["tr","tr"],["b","b"],["c","c"],["g","g"],["h","h"],["l","l"],["m","m"],["n","n"],["r","r"],["s","s"],["t","t"],["v","v"],["x","x"]].sort((a,b)=>b[0].length-a[0].length));const CVN_CODE_INITIALS=Object.freeze([...new Set(CVN_INITIALS.map(([,cvn])=>cvn))].sort((a,b)=>b.length-a.length));const CQN_TO_CVN_INITIAL=new Map(CVN_INITIALS.map(([cqn,cvn])=>[cqn,cvn]));const I_TO_Y=new Map([["i","y"],["ì","ỳ"],["ỉ","ỷ"],["ĩ","ỹ"],["í","ý"],["ị","ỵ"]]);const Y_TO_I=new Map([...I_TO_Y].map(([i,y])=>[y,i]));const BASE_CACHE=new Map();function getBaseVowel(ch=""){if(!ch)return"";if(BASE_CACHE.has(ch))return BASE_CACHE.get(ch);const lower=ch.toLowerCase();for(const group of BASE_VOWEL_GROUPS){if(group.includes(lower)){BASE_CACHE.set(ch,group[0]);return group[0];}}BASE_CACHE.set(ch,lower);return lower;}function buildMap(from,to){const map=new Map();for(let i=0;i<from.length;i+=1){const key=from[i];if(!map.has(key))map.set(key,to[i]);}return map;}const VOWEL=Object.freeze({cqnToCvn:buildMap(vowels.cqn,vowels.cvn),cqnToCvss:buildMap(vowels.cqn,vowels.cvss),cvnToCqn:buildMap(vowels.cvn,vowels.cqn),cvnToCvss:buildMap(vowels.cvn,vowels.cvss),cvssToCqn:buildMap(vowels.cvss,vowels.cqn),cvssToCvn:buildMap(vowels.cvss,vowels.cvn)});const CVNSS54_PATCH=Object.freeze([["uyêt","ydy"],["uyết","ydb"],["uyềt","ydd"],["uyểt","ydq"],["uyễt","ydg"],["uyệt","ydf"],["uyên","yly"],["uyến","ylb"],["uyền","yld"],["uyển","ylq"],["uyễn","ylg"],["uyện","ylf"],["iêt","idy"],["iết","idb"],["iềt","idd"],["iểt","idq"],["iễt","idg"],["iệt","idf"],["iêp","ify"],["iếp","ifb"],["iềp","ifd"],["iểp","ifq"],["iễp","ifg"],["iệp","iff"],["iêc","isy"],["iếc","isb"],["iềc","isd"],["iểc","isq"],["iễc","isg"],["iệc","isf"],["iên","ily"],["iến","ilb"],["iền","ild"],["iển","ilq"],["iễn","ilg"],["iện","ilf"],["iêm","ivy"],["iếm","ivb"],["iềm","ivd"],["iểm","ivq"],["iễm","ivg"],["iệm","ivf"],["iêng","izy"],["iếng","izb"],["iềng","izd"],["iểng","izq"],["iễng","izg"],["iệng","izf"],["iêu","iwy"],["iếu","iwb"],["iều","iwd"],["iểu","iwq"],["iễu","iwg"],["iệu","iwf"],["yêt","idy"],["yết","idb"],["yềt","idd"],["yểt","idq"],["yễt","idg"],["yệt","idf"],["yên","ily"],["yến","ilb"],["yền","ild"],["yển","ilq"],["yễn","ilg"],["yện","ilf"],["yêm","ivy"],["yếm","ivb"],["yềm","ivd"],["yểm","ivq"],["yễm","ivg"],["yệm","ivf"],["yêng","izy"],["yếng","izb"],["yềng","izd"],["yểng","izq"],["yễng","izg"],["yệng","izf"],["yêu","iwy"],["yếu","iwb"],["yều","iwd"],["yểu","iwq"],["yễu","iwg"],["yệu","iwf"],["uôt","udy"],["uốt","udb"],["uồt","udd"],["uổt","udq"],["uỗt","udg"],["uột","udf"],["uôc","usy"],["uốc","usb"],["uồc","usd"],["uổc","usq"],["uỗc","usg"],["uộc","usf"],["uôn","uly"],["uốn","ulb"],["uồn","uld"],["uổn","ulq"],["uỗn","ulg"],["uộn","ulf"],["uôm","uvy"],["uốm","uvb"],["uồm","uvd"],["uổm","uvq"],["uỗm","uvg"],["uộm","uvf"],["uông","uzy"],["uống","uzb"],["uồng","uzd"],["uổng","uzq"],["uỗng","uzg"],["uộng","uzf"],["uôi","ujy"],["uối","ujb"],["uồi","ujd"],["uổi","ujq"],["uỗi","ujg"],["uội","ujf"],["ươt","udo"],["ướt","udx"],["ườt","udk"],["ưởt","udv"],["ưỡt","udw"],["ượt","udh"],["ươp","ufo"],["ướp","ufx"],["ườp","ufk"],["ưởp","ufv"],["ưỡp","ufw"],["ượp","ufh"],["ươc","uso"],["ước","usx"],["ườc","usk"],["ưởc","usv"],["ưỡc","usw"],["ược","ush"],["ươn","ulo"],["ướn","ulx"],["ườn","ulk"],["ưởn","ulv"],["ưỡn","ulw"],["ượn","ulh"],["ươm","uvo"],["ướm","uvx"],["ườm","uvk"],["ưởm","uvv"],["ưỡm","uvw"],["ượm","uvh"],["ương","uzo"],["ướng","uzx"],["ường","uzk"],["ưởng","uzv"],["ưỡng","uzw"],["ượng","uzh"],["ươu","uwo"],["ướu","uwx"],["ườu","uwk"],["ưởu","uwv"],["ưỡu","uww"],["ượu","uwh"],["ươi","ujo"],["ưới","ujx"],["ười","ujk"],["ưởi","ujv"],["ưỡi","ujw"],["ượi","ujh"],["uât","ady"],["uất","adb"],["uầt","add"],["uẩt","adq"],["uẫt","adg"],["uật","adf"],["uân","aly"],["uấn","alb"],["uần","ald"],["uẩn","alq"],["uẫn","alg"],["uận","alf"],["uâng","azy"],["uấng","azb"],["uầng","azd"],["uẩng","azq"],["uẫng","azg"],["uậng","azf"],["uây","ajy"],["uấy","ajb"],["uầy","ajd"],["uẩy","ajq"],["uẫy","ajg"],["uậy","ajf"],["uơt","odo"],["uớt","odx"],["uờt","odk"],["uởt","odv"],["uỡt","odw"],["uợt","odh"],["uơn","olo"],["uớn","olx"],["uờn","olk"],["uởn","olv"],["uỡn","olw"],["uợn","olh"],["uơi","ojo"],["uới","ojx"],["uời","ojk"],["uởi","ojv"],["uỡi","ojw"],["uợi","ojh"],["oăt","ado"],["oắt","adx"],["oằt","adk"],["oẳt","adv"],["oẵt","adw"],["oặt","adh"],["oăp","afo"],["oắp","afx"],["oằp","afk"],["oẳp","afv"],["oẵp","afw"],["oặp","afh"],["oăc","aso"],["oắc","asx"],["oằc","ask"],["oẳc","asv"],["oẵc","asw"],["oặc","ash"],["oăn","alo"],["oắn","alx"],["oằn","alk"],["oẳn","alv"],["oẵn","alw"],["oặn","alh"],["oăm","avo"],["oắm","avx"],["oằm","avk"],["oẳm","avv"],["oẵm","avw"],["oặm","avh"],["oăng","azo"],["oắng","azx"],["oằng","azk"],["oẳng","azv"],["oẵng","azw"],["oặng","azh"],["oet","ed"],["oét","edj"],["oèt","edl"],["oẻt","edz"],["oẽt","eds"],["oẹt","edr"],["oen","elp"],["oén","elj"],["oèn","ell"],["oẻn","elz"],["oẽn","els"],["oẹn","elr"],["oem","evp"],["oém","evj"],["oèm","evl"],["oẻm","evz"],["oẽm","evs"],["oẹm","evr"],["oeo","ewp"],["oéo","ewj"],["oèo","ewl"],["oẻo","ewz"],["oẽo","ews"],["oẹo","ewr"],["oat","od"],["oát","odj"],["oàt","odl"],["oảt","odz"],["oãt","ods"],["oạt","odr"],["oap","of"],["oáp","ofj"],["oàp","ofl"],["oảp","ofz"],["oãp","ofs"],["oạp","ofr"],["oac","os"],["oác","osj"],["oàc","osl"],["oảc","osz"],["oãc","oss"],["oạc","osr"],["oan","olp"],["oán","olj"],["oàn","oll"],["oản","olz"],["oãn","ols"],["oạn","olr"],["oam","ovp"],["oám","ovj"],["oàm","ovl"],["oảm","ovz"],["oãm","ovs"],["oạm","ovr"],["oang","ozp"],["oáng","ozj"],["oàng","ozl"],["oảng","ozz"],["oãng","ozs"],["oạng","ozr"],["oao","owp"],["oáo","owj"],["oào","owl"],["oảo","owz"],["oão","ows"],["oạo","owr"],["oai","ojp"],["oái","ojj"],["oài","ojl"],["oải","ojz"],["oãi","ojs"],["oại","ojr"],["oay","ajp"],["oáy","ajj"],["oày","ajl"],["oảy","ajz"],["oãy","ajs"],["oạy","ajr"]]);for(const[cqnVowel,cvssVowel]of CVNSS54_PATCH){VOWEL.cqnToCvn.set(cqnVowel,cvssVowel);VOWEL.cqnToCvss.set(cqnVowel,cvssVowel);if(!VOWEL.cvnToCvss.has(cvssVowel))VOWEL.cvnToCvss.set(cvssVowel,cvssVowel);if(!VOWEL.cvssToCvn.has(cvssVowel))VOWEL.cvssToCvn.set(cvssVowel,cvssVowel);VOWEL.cvnToCqn.set(cvssVowel,cqnVowel);VOWEL.cvssToCqn.set(cvssVowel,cqnVowel);}const CVNSS56_EXTRA_PATCH=Object.freeze([["oec","es"],["oéc","esj"],["oèc","esl"],["oẻc","esz"],["oẽc","ess"],["oẹc","esr"],["oeng","ezp"],["oéng","ezj"],["oèng","ezl"],["oẻng","ezz"],["oẽng","ezs"],["oẹng","ezr"]]);for(const[cqnVowel,cvssVowel]of CVNSS56_EXTRA_PATCH){VOWEL.cqnToCvn.set(cqnVowel,cvssVowel);VOWEL.cqnToCvss.set(cqnVowel,cvssVowel);VOWEL.cvnToCvss.set(cvssVowel,cvssVowel);VOWEL.cvssToCvn.set(cvssVowel,cvssVowel);VOWEL.cvnToCqn.set(cvssVowel,cqnVowel);VOWEL.cvssToCqn.set(cvssVowel,cqnVowel);}const CVNSS54_REVERSE_PREFERRED=Object.freeze([["idy","iêt"],["idb","iết"],["idd","iềt"],["idq","iểt"],["idg","iễt"],["idf","iệt"],["ify","iêp"],["ifb","iếp"],["ifd","iềp"],["ifq","iểp"],["ifg","iễp"],["iff","iệp"],["isy","iêc"],["isb","iếc"],["isd","iềc"],["isq","iểc"],["isg","iễc"],["isf","iệc"],["ily","iên"],["ilb","iến"],["ild","iền"],["ilq","iển"],["ilg","iễn"],["ilf","iện"],["ivy","iêm"],["ivb","iếm"],["ivd","iềm"],["ivq","iểm"],["ivg","iễm"],["ivf","iệm"],["izy","iêng"],["izb","iếng"],["izd","iềng"],["izq","iểng"],["izg","iễng"],["izf","iệng"],["iwy","iêu"],["iwb","iếu"],["iwd","iều"],["iwq","iểu"],["iwg","iễu"],["iwf","iệu"]]);for(const[cvssVowel,cqnVowel]of CVNSS54_REVERSE_PREFERRED){VOWEL.cvnToCqn.set(cvssVowel,cqnVowel);VOWEL.cvssToCqn.set(cvssVowel,cqnVowel);}function isAllUpper(word){return/\p{L}/u.test(word)&&word===word.toLocaleUpperCase("vi-VN");}function applyCase(source,value){if(!value)return value;if(isAllUpper(source))return value.toLocaleUpperCase("vi-VN");if(source[0]===source[0].toLocaleUpperCase("vi-VN")&&source[0]!==source[0].toLocaleLowerCase("vi-VN")){return value[0].toLocaleUpperCase("vi-VN")+value.slice(1);}return value;}function tokenize(input){return String(input??"").normalize("NFC").match(/[\p{L}]+|[^\p{L}]+/gu)||[];}function splitCqnWord(word){const lower=word.toLocaleLowerCase("vi-VN").normalize("NFC");for(const[initial]of CVN_INITIALS){if(lower.startsWith(initial)){return{initial,vowel:lower.slice(initial.length)};}}return{initial:"",vowel:lower};}function normalizeCqnParts(initial,vowel){let onset=initial;let v=vowel;if(onset==="gi"&&v!=="a"&&VOWEL.cqnToCvn.has("i"+v))v="i"+v;if(onset==="qu"&&getBaseVowel(v[0])==="y")v="u"+v;if(onset==="g"&&getBaseVowel(v[0])==="i")onset="gi";if(onset==="g"&&"eê".includes(getBaseVowel(v[0])))onset="gh";if(onset==="c"&&"iêe".includes(getBaseVowel(v[0])))onset="k";if(onset==="ng"&&"iêe".includes(getBaseVowel(v[0])))onset="ngh";return{initial:onset,vowel:v};}function restoreCqnInitial(cvnInitial,cqnVowel){const base=getBaseVowel(cqnVowel[0]);if(cvnInitial==="q")return"qu";if(cvnInitial==="j")return"gi";if(cvnInitial==="z")return"d";if(cvnInitial==="d")return"đ";if(cvnInitial==="f")return"ph";if(cvnInitial==="k")return"kh";if(cvnInitial==="w")return"iêe".includes(base)?"ngh":"ng";if(cvnInitial==="g")return"iêe".includes(base)?"gh":"g";if(cvnInitial==="c")return"iêe".includes(base)?"k":"c";return cvnInitial;}function cleanCqnAfterJoin(initial,vowel){let onset=initial;let v=vowel;if(!onset&&I_TO_Y.has(v[0])&&!v.startsWith("ia"))v=I_TO_Y.get(v[0])+v.slice(1);if(onset==="gi"&&getBaseVowel(v[0])==="i"){if(/^[iìỉĩíị](?:m|n|p|t|c|ch|ng|nh)?$/u.test(v))return"g"+v;v=v.slice(1)||v;}if(onset==="qu"&&getBaseVowel(v[0])==="u"&&v.length>1)v=v.slice(1);return onset+v;}function cqnToCvnAndCvss(word){const{initial,vowel}=normalizeCqnParts(...Object.values(splitCqnWord(word)));const cvnInitial=CQN_TO_CVN_INITIAL.get(initial)??initial;const cvnVowel=VOWEL.cqnToCvn.get(vowel)??vowel;const cvssVowel=VOWEL.cqnToCvss.get(vowel)??cvnVowel;return{cqn:applyCase(word,word.normalize("NFC")),cvn:applyCase(word,cvnInitial+cvnVowel),cvss:applyCase(word,cvnInitial+cvssVowel)};}function splitCodeWord(word,vowelMap){const lower=word.toLocaleLowerCase("vi-VN").normalize("NFC");if(vowelMap.has(lower))return{initial:"",codeVowel:lower};for(const initial of CVN_CODE_INITIALS){if(!lower.startsWith(initial))continue;const rest=lower.slice(initial.length);if(rest&&vowelMap.has(rest))return{initial,codeVowel:rest};}for(const initial of CVN_CODE_INITIALS){if(lower.startsWith(initial))return{initial,codeVowel:lower.slice(initial.length)};}return{initial:"",codeVowel:lower};}function codeToCqnAndOther(word,source){const isCvss=source==="cvss";const toCqn=isCvss?VOWEL.cvssToCqn:VOWEL.cvnToCqn;const toOther=isCvss?VOWEL.cvssToCvn:VOWEL.cvnToCvss;const{initial,codeVowel}=splitCodeWord(word,toCqn);const cqnVowel=toCqn.get(codeVowel)??codeVowel;const otherVowel=toOther.get(codeVowel)??codeVowel;const cqnInitial=restoreCqnInitial(initial,cqnVowel);const cqn=cleanCqnAfterJoin(cqnInitial,cqnVowel);const originalCode=initial+codeVowel;const other=initial+otherVowel;if(isCvss){return{cqn:applyCase(word,cqn),cvn:applyCase(word,other),cvss:applyCase(word,originalCode)};}return{cqn:applyCase(word,cqn),cvn:applyCase(word,originalCode),cvss:applyCase(word,other)};}function cvnToCqnAndCvss(word){return codeToCqnAndOther(word,"cvn");}function cvssToCqnAndCvn(word){return codeToCqnAndOther(word,"cvss");}function convertText(input,mode="cqn"){if(!["cqn","cvn","cvss"].includes(mode)){throw new Error('Mode không hợp lệ. Dùng một trong: "cqn", "cvn", "cvss".');}const result={cqn:[],cvn:[],cvss:[]};for(const token of tokenize(input)){if(!/^[\p{L}]+$/u.test(token)){result.cqn.push(token);result.cvn.push(token);result.cvss.push(token);continue;}const converted=mode==="cqn"?cqnToCvnAndCvss(token):mode==="cvn"?cvnToCqnAndCvss(token):cvssToCqnAndCvn(token);result.cqn.push(converted.cqn);result.cvn.push(converted.cvn);result.cvss.push(converted.cvss);}return{cqn:result.cqn.join(""),cvn:result.cvn.join(""),cvss:result.cvss.join("")};}return Object.freeze({VERSION,RULESET,convert:convertText,fromCqn:(input)=>convertText(input,"cqn"),fromCvn:(input)=>convertText(input,"cvn"),fromCvss:(input)=>convertText(input,"cvss"),specialChars:SPECIAL_CHARS});})();if(typeof module!=="undefined"&&typeof module.exports!=="undefined"){module.exports=CVNSSConverter;}else if(typeof window!=="undefined"){window.CVNSSConverter=CVNSSConverter;}
+</script>
+
+<script>
+(() => {
+  'use strict';
+
+  // ─── constants ──────────────────────────────────────────────────────
+  const LEAF_CODES = ['0000','0001','0010','0011','0100','0101','0110','0111',
+                      '1000','1001','1010','1011','1100','1101','1110','1111'];
+  const ESC_CODE = '1111';
+  const BASE27_CHARS = [' '].concat('abcdefghijklmnopqrstuvwxyz'.split(''));
+  const PIPELINE_NAMES = ['Tiếng Việt','CVNSS4.0','Base27','Gain','Tree 4‑bit','Bitstream','Decode'];
+
+  // ─── DOM refs ──────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const viInput = $('viInput');
+  const cvnssInput = $('cvnssInput');
+  const decodedBox = $('decodedBox');
+  const roundTripLine = $('roundTripLine');
+  const statsGrid = $('statsGrid');
+  const tokenTableBody = $('tokenTableBody');
+  const treeSvg = $('treeSvg');
+  const bitstreamLog = $('bitstreamLog');
+  const pulseBars = $('pulseBars');
+  const dotLamp = $('dotLamp');
+  const dashLamp = $('dashLamp');
+  const statusLed = $('statusLed');
+  const statusText = $('statusText');
+  const currentToken = $('currentToken');
+  const currentIndex = $('currentIndex');
+  const currentType = $('currentType');
+  const audioState = $('audioState');
+  const checksumDisplay = $('checksumDisplay');
+  const kpiState = $('kpiState');
+  const kpiRound = $('kpiRound');
+  const kpiBits = $('kpiBits');
+  const kpiSave = $('kpiSave');
+  const playProgress = $('playProgress');
+  const converterBadge = $('converterBadge');
+
+  // ─── state ──────────────────────────────────────────────────────────
+  let latest = null;
+  let stopFlag = false;
+  let audioCtx = null;
+  let playbackIndex = 0;
+  let treeMap = { nodes: new Map(), edges: new Map(), orb: null };
+
+  // ─── helpers ──────────────────────────────────────────────────────
+  function normSpaces(s){ return s.replace(/\s+/g,' ').trim(); }
+  function stripDiacritics(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  function esc(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  function viToCvnssDemo(input){
+    const raw = String(input || '').normalize('NFC');
+    try {
+      if(window.CVNSSConverter && typeof window.CVNSSConverter.fromCqn === 'function'){
+        const converted = window.CVNSSConverter.fromCqn(raw);
+        const out = converted && (converted.cvn || converted.cvss || converted.cqn);
+        if(out) return normSpaces(out);
+      }
+    } catch(err) {
+      console.warn('CVNSSConverter fallback activated:', err);
+    }
+    // Fallback offline tối giản để dashboard vẫn hoạt động nếu script converter bị lỗi.
+    const toneMap = {
+      'à':'af','á':'as','ả':'ar','ã':'ax','ạ':'aj','ằ':'af','ắ':'as','ẳ':'ar','ẵ':'ax','ặ':'aj',
+      'ầ':'af','ấ':'as','ẩ':'ar','ẫ':'ax','ậ':'aj','è':'ef','é':'es','ẻ':'er','ẽ':'ex','ẹ':'ej',
+      'ề':'ef','ế':'es','ể':'er','ễ':'ex','ệ':'ej','ì':'if','í':'is','ỉ':'ir','ĩ':'ix','ị':'ij',
+      'ò':'of','ó':'os','ỏ':'or','õ':'ox','ọ':'oj','ồ':'of','ố':'os','ổ':'or','ỗ':'ox','ộ':'oj',
+      'ờ':'of','ớ':'os','ở':'or','ỡ':'ox','ợ':'oj','ù':'uf','ú':'us','ủ':'ur','ũ':'ux','ụ':'uj',
+      'ừ':'uf','ứ':'us','ử':'ur','ữ':'ux','ự':'uj','ỳ':'yf','ý':'ys','ỷ':'yr','ỹ':'yx','ỵ':'yj','đ':'dd'
+    };
+    let out='';
+    for(const ch of raw.toLowerCase()){
+      if(toneMap[ch]) out += toneMap[ch];
+      else if(/[a-z ]/.test(ch)) out += ch;
+      else {
+        const base = stripDiacritics(ch).toLowerCase();
+        out += /[a-z ]/.test(base) ? base : ' ';
+      }
+    }
+    out = out.replace(/ngh/g,'w').replace(/ng/g,'w').replace(/ph/g,'f').replace(/qu/g,'q').replace(/gi/g,'j').replace(/đ/g,'d');
+    return normSpaces(out);
+  }
+
+  function cleanBase27(s){ return normSpaces(s.toLowerCase().replace(/[^a-z ]+/g,' ')); }
+  function base27Id(ch){ return BASE27_CHARS.indexOf(ch); }
+  function base27Char(id){ return BASE27_CHARS[id] ?? ' '; }
+  function idTo8Bit(id){ return id.toString(2).padStart(8,'0'); }
+  function from8Bit(bits){ return parseInt(bits, 2); }
+
+  function getCandidates(clean){
+    const set = new Set();
+    for(const ch of clean) if(/[a-z ]/.test(ch)) set.add(ch);
+    for(let n=2;n<=4;n++){
+      for(let i=0;i<=clean.length-n;i++){
+        const sub = clean.slice(i, i+n);
+        if(/^[a-z ]+$/.test(sub) && !/^\s+$/.test(sub)) set.add(sub);
+      }
+    }
+    for(const tok of clean.split(' ')){
+      if(tok) set.add(tok);
+      if(tok.length>=2) set.add(tok.slice(0, Math.min(4,tok.length)));
+    }
+    return [...set].filter(Boolean);
+  }
+  function countOccurrences(text, token){
+    let c=0, idx=0;
+    while((idx=text.indexOf(token, idx)) !== -1){ c++; idx++; }
+    return c;
+  }
+  function rankTokens(clean){
+    return getCandidates(clean).map(token => {
+      const freq = countOccurrences(clean, token);
+      const gain = freq * ((5 * token.length) - 4);
+      let penalty = 0;
+      if(/^\s|\s$/.test(token)) penalty += 2;
+      if(token.length >= 4) penalty += 1;
+      return { token, freq, gain, score: gain - penalty, len: token.length };
+    }).filter(x=>x.freq>0)
+      .sort((a,b)=>b.score-a.score || b.freq-a.freq || b.len-a.len || a.token.localeCompare(b.token));
+  }
+  function buildTree(clean){
+    const ranked = rankTokens(clean);
+    const selected=[]; const used=new Set();
+    if(clean.includes(' ')){
+      const c = (clean.match(/ /g) || []).length;
+      selected.push({ token:' ', freq:c, gain:c, score:999999, forced:true });
+      used.add(' ');
+    }
+    for(const row of ranked){
+      if(selected.length >= 15) break;
+      if(!used.has(row.token)){ selected.push(row); used.add(row.token); }
+    }
+    for(const ch of BASE27_CHARS){
+      if(selected.length >= 15) break;
+      if(!used.has(ch)){
+        const freq = countOccurrences(clean, ch);
+        selected.push({ token:ch, freq, gain:freq, score:freq });
+        used.add(ch);
+      }
+    }
+    const codeToToken={}; const tokenMeta={};
+    LEAF_CODES.slice(0,15).forEach((code, idx)=>{ codeToToken[code]=selected[idx].token; tokenMeta[selected[idx].token]=selected[idx]; });
+    codeToToken[ESC_CODE]='ESC';
+    return { selected, ranked, codeToToken, tokenMeta };
+  }
+  function encodeDP(clean, codeToToken){
+    const tokenToCode={};
+    for(const [code, token] of Object.entries(codeToToken)) if(code !== ESC_CODE) tokenToCode[token]=code;
+    const tokens = Object.keys(tokenToCode).sort((a,b)=>b.length-a.length || a.localeCompare(b));
+    const n = clean.length; const dp=new Array(n+1).fill(Infinity); const choice=new Array(n+1).fill(null); dp[n]=0;
+    for(let i=n-1;i>=0;i--){
+      const ch = clean[i]; dp[i] = 12 + dp[i+1]; choice[i] = { type:'raw', ch };
+      for(const tok of tokens){
+        if(clean.startsWith(tok, i)){
+          const cost = 4 + dp[i+tok.length];
+          if(cost < dp[i]){ dp[i]=cost; choice[i]={ type:'token', token:tok }; }
+        }
+      }
+    }
+    let i=0, bits=''; const emitted=[];
+    while(i<n){
+      const c = choice[i];
+      if(c.type === 'token'){
+        const code = tokenToCode[c.token]; emitted.push({ type:'token', token:c.token, code, bits:code }); bits += code; i += c.token.length;
+      }else{
+        const id = base27Id(c.ch), raw8=idTo8Bit(id); emitted.push({ type:'raw', token:c.ch, code:ESC_CODE, raw8, bits:ESC_CODE+raw8 }); bits += ESC_CODE+raw8; i += 1;
+      }
+    }
+    return { emitted, bits, totalBits: dp[0] };
+  }
+  function decodeStream(bits, codeToToken){
+    let i=0, out='';
+    while(i<bits.length){
+      const nib = bits.slice(i, i+4); i += 4;
+      if(nib !== ESC_CODE) out += codeToToken[nib] || '';
+      else { const raw = bits.slice(i, i+8); i += 8; out += base27Char(from8Bit(raw)); }
+    }
+    return out;
+  }
+  function calcChecksum(bits){
+    let s=0; for(let i=0;i<bits.length;i++) s += (bits[i]==='1'?1:0)*(i+1);
+    return ((s%97)+1).toString().padStart(2,'0');
+  }
+  function morseBits(bits){ return bits.split('').map(b => `<span style="display:inline-block;width:20px;height:20px;border-radius:6px;background:${b==='0'?'#39d98a':'#ff6961'};text-align:center;line-height:20px;font-weight:700;color:#fff;font-size:0.7rem;">${b==='0'?'·':'—'}</span>`).join(''); }
+
+  // ─── render functions ──────────────────────────────────────────────
+  function renderPipeline(){
+    const flow = $('pipelineFlow');
+    flow.innerHTML = PIPELINE_NAMES.map((name, i) => {
+      return `<span class="step" data-idx="${i}">${name}</span>${i < PIPELINE_NAMES.length-1 ? '<span class="arrow">→</span>' : ''}`;
+    }).join('');
+  }
+
+  function renderStats(clean, encoded, decoded, selected){
+    const rawBits = clean.length * 5;
+    const direct = encoded.emitted.filter(x=>x.type==='token').length;
+    const escCount = encoded.emitted.filter(x=>x.type==='raw').length;
+    const save = rawBits ? ((1 - encoded.totalBits / rawBits) * 100) : 0;
+    const items = [
+      ['Base27 len', clean.length],
+      ['Base27 thô', rawBits + 'b'],
+      ['Tree 4-bit', encoded.totalBits + 'b'],
+      ['Tiết kiệm', save.toFixed(1) + '%'],
+      ['Direct', direct],
+      ['ESC raw', escCount],
+      ['15 slot', selected.length],
+      ['Round-trip', decoded === clean ? 'PASS' : 'FAIL']
+    ];
+    statsGrid.innerHTML = items.map(([a,b]) => `<div class="stat-box"><div class="sl">${a}</div><div class="sv">${b}</div></div>`).join('');
+    kpiState.textContent = 'ENCODED';
+    kpiRound.textContent = decoded === clean ? '✅ PASS' : '❌ FAIL';
+    kpiBits.textContent = encoded.totalBits + 'b';
+    kpiSave.textContent = save.toFixed(1) + '%';
+    checksumDisplay.textContent = calcChecksum(encoded.bits);
+  }
+
+  function renderTokenTable(model){
+    tokenTableBody.innerHTML = LEAF_CODES.map((code, idx) => {
+      if(code === ESC_CODE) return `<tr><td>${idx+1}</td><td class="mono">${code}</td><td>${morseBits(code)}</td><td><span class="chip esc">ESC</span></td><td>—</td><td>—</td></tr>`;
+      const tok=model.codeToToken[code]; const meta=model.tokenMeta[tok]||{freq:0,gain:0};
+      return `<tr><td>${idx+1}</td><td class="mono">${code}</td><td>${morseBits(code)}</td><td><span class="chip">${esc(tok===' ' ? '␣' : tok)}</span></td><td>${meta.freq}</td><td>${meta.gain}</td></tr>`;
+    }).join('');
+  }
+
+  function renderOutputs(clean, encoded, decoded){
+    cvnssInput.value = clean;
+    decodedBox.textContent = decoded;
+    roundTripLine.innerHTML = decoded === clean ? `<span style="color:#39d98a;">✅ PASS</span> · Decode(Encode(x)) = x` : `<span style="color:#ff6961;">❌ FAIL</span>`;
+    // bitstream log
+    bitstreamLog.innerHTML = encoded.emitted.map((item, i) => {
+      const token = item.token === ' ' ? '␣' : esc(item.token);
+      const cls = item.type === 'raw' ? 'esc' : '';
+      return `<span class="emit-log" data-idx="${i}"><span class="tok ${cls}">${token}</span> <span class="mono" style="font-size:0.7rem;color:#8eb4d4;">${item.bits}</span></span>`;
+    }).join('');
+  }
+
+  function initPulseBars(){
+    pulseBars.innerHTML = Array.from({length:32}, ()=>`<div class="bar"></div>`).join('');
+  }
+
+  function setPulse(mode){
+    const bars = pulseBars.querySelectorAll('.bar');
+    const level = mode === 'dot' ? 12 : mode === 'dash' ? 22 : 4;
+    bars.forEach((bar, i) => {
+      const active = i < level;
+      bar.className = 'bar' + (active ? (mode === 'dot' ? ' dot-live' : ' dash-live') : '');
+      bar.style.height = active ? `${28 + (i%5)*6}px` : `${10 + (i%4)*2}px`;
+    });
+  }
+
+  function resetSignalUi(){
+    dotLamp.className = 'lamp';
+    dashLamp.className = 'lamp';
+    statusLed.className = 'led';
+    statusText.textContent = 'Idle';
+    setPulse(null);
+    currentToken.textContent = '—';
+    currentIndex.textContent = '0 / 0';
+    currentType.textContent = '—';
+    if(playProgress) playProgress.style.width = '0%';
+    bitstreamLog.querySelectorAll('.emit-log.active').forEach(el => el.classList.remove('active'));
+    resetTreeGlow();
+  }
+
+  // ─── tree SVG with animation ──────────────────────────────────────
+  function buildTreeSvg(model, emitted){
+    const svg = treeSvg;
+    const NS = 'http://www.w3.org/2000/svg';
+    svg.innerHTML = '';
+    treeMap = { nodes: new Map(), edges: new Map(), orb: null };
+
+    const defs = document.createElementNS(NS,'defs');
+    defs.innerHTML = `
+      <filter id="softNode"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#05101a" flood-opacity="0.45"/></filter>
+      <filter id="glowUsed"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#ffd166" flood-opacity="0.55"/></filter>
+      <filter id="glowStrong"><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#ffd166" flood-opacity="0.95"/></filter>
+      <radialGradient id="goldOrb" cx="35%" cy="35%" r="70%"><stop offset="0%" stop-color="#fff8da"/><stop offset="35%" stop-color="#ffe28c"/><stop offset="70%" stop-color="#ffc93d"/><stop offset="100%" stop-color="#cf9300"/></radialGradient>
+    `;
+    svg.appendChild(defs);
+
+    const width = 1120, height = 600;
+    const levelY = [72, 170, 280, 400, 540];
+    const usedCount = new Map(); emitted.forEach(e => usedCount.set(e.code, (usedCount.get(e.code)||0) + 1));
+
+    function nodeX(prefix, depth){
+      const slots = 2 ** depth;
+      const idx = prefix.length ? parseInt(prefix, 2) : 0;
+      return width * ((idx + 0.5) / slots);
+    }
+
+    const nodes = [];
+    for(let depth=0; depth<=4; depth++){
+      for(let i=0; i<2**depth; i++){
+        const prefix = depth===0 ? '' : i.toString(2).padStart(depth,'0');
+        nodes.push({ prefix, depth, x: nodeX(prefix, depth), y: levelY[depth] });
+      }
+    }
+
+    // edges
+    nodes.forEach(n => {
+      if(n.depth === 4) return;
+      ['0','1'].forEach(bit => {
+        const child = nodes.find(v => v.prefix === n.prefix + bit && v.depth === n.depth + 1);
+        if(!child) return;
+        const base = document.createElementNS(NS,'line');
+        base.setAttribute('x1', n.x); base.setAttribute('y1', n.y+16);
+        base.setAttribute('x2', child.x); base.setAttribute('y2', child.y-16);
+        base.setAttribute('stroke', bit==='0' ? '#39d98a' : '#ff6961');
+        base.setAttribute('stroke-width', n.depth<3 ? '3.2':'2.6');
+        base.setAttribute('stroke-dasharray', bit==='0' ? '2 10':'14 10');
+        base.setAttribute('stroke-linecap','round');
+        svg.appendChild(base);
+
+        const glow = document.createElementNS(NS,'line');
+        glow.setAttribute('x1', n.x); glow.setAttribute('y1', n.y+16);
+        glow.setAttribute('x2', child.x); glow.setAttribute('y2', child.y-16);
+        glow.setAttribute('stroke', '#ffd166');
+        glow.setAttribute('stroke-width', '6');
+        glow.setAttribute('stroke-linecap', 'round');
+        glow.setAttribute('opacity', '0');
+        glow.setAttribute('filter', 'url(#glowStrong)');
+        svg.appendChild(glow);
+        const key = n.prefix + bit;
+        treeMap.edges.set(key, { glow, x1:n.x, y1:n.y+16, x2:child.x, y2:child.y-16 });
+
+        const tx = document.createElementNS(NS,'text');
+        tx.setAttribute('x', (n.x+child.x)/2 + (bit==='0' ? -10 : 10));
+        tx.setAttribute('y', (n.y+child.y)/2 - 6);
+        tx.setAttribute('text-anchor','middle');
+        tx.setAttribute('font-size','15');
+        tx.setAttribute('font-weight','900');
+        tx.setAttribute('fill', bit==='0' ? '#78f0b6' : '#ff9d94');
+        tx.setAttribute('class','darkText');
+        tx.textContent = bit==='0' ? '·' : '—';
+        svg.appendChild(tx);
+      });
+    });
+
+    // nodes
+    nodes.forEach(n => {
+      const isLeaf = n.depth === 4;
+      const used = isLeaf && usedCount.get(n.prefix);
+      const circle = document.createElementNS(NS,'circle');
+      circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y);
+      circle.setAttribute('r', isLeaf ? 18 : 16);
+      circle.setAttribute('fill', isLeaf ? (used ? '#f5d38a' : '#10263a') : '#132b41');
+      circle.setAttribute('stroke', used ? '#ffd166' : '#84a7c9');
+      circle.setAttribute('stroke-width', used ? '3.2':'2');
+      circle.setAttribute('filter', used ? 'url(#glowUsed)' : 'url(#softNode)');
+      svg.appendChild(circle);
+      const txt = document.createElementNS(NS,'text');
+      txt.setAttribute('x', n.x); txt.setAttribute('y', n.y+5);
+      txt.setAttribute('text-anchor','middle');
+      txt.setAttribute('font-size', isLeaf ? '11.5' : '11');
+      txt.setAttribute('font-weight','900');
+      txt.setAttribute('fill', isLeaf && used ? '#102234' : '#e8f5ff');
+      txt.setAttribute('class', isLeaf ? 'leafText' : (n.depth===0 ? 'rootText' : 'darkText'));
+      txt.textContent = n.depth===0 ? 'BEGIN' : (isLeaf ? n.prefix : n.prefix);
+      svg.appendChild(txt);
+      treeMap.nodes.set(n.depth===0 ? 'root' : n.prefix, { circle, baseStroke:circle.getAttribute('stroke-width'), baseFilter:circle.getAttribute('filter') || '' });
+
+      if(isLeaf){
+        const token = model.codeToToken[n.prefix];
+        const label = token === ' ' ? '␣' : token;
+        const rect = document.createElementNS(NS,'rect');
+        rect.setAttribute('x', n.x-34); rect.setAttribute('y', n.y+22);
+        rect.setAttribute('width', 68); rect.setAttribute('height', 22);
+        rect.setAttribute('rx', 11);
+        rect.setAttribute('fill', token==='ESC' ? 'rgba(255,105,97,.2)' : 'rgba(255,209,102,.18)');
+        rect.setAttribute('stroke', token==='ESC' ? 'rgba(255,105,97,.42)' : 'rgba(255,209,102,.38)');
+        svg.appendChild(rect);
+        const lt = document.createElementNS(NS,'text');
+        lt.setAttribute('x', n.x); lt.setAttribute('y', n.y+38);
+        lt.setAttribute('text-anchor','middle');
+        lt.setAttribute('font-size','11');
+        lt.setAttribute('font-weight','850');
+        lt.setAttribute('fill', token==='ESC' ? '#ffb4af' : '#ffe497');
+        lt.setAttribute('class','darkText');
+        lt.textContent = label;
+        svg.appendChild(lt);
+        if(used){
+          const badge = document.createElementNS(NS,'rect');
+          badge.setAttribute('x', n.x+18); badge.setAttribute('y', n.y-26);
+          badge.setAttribute('width', 22); badge.setAttribute('height', 15);
+          badge.setAttribute('rx', 7);
+          badge.setAttribute('fill','#5cbcff');
+          svg.appendChild(badge);
+          const bt = document.createElementNS(NS,'text');
+          bt.setAttribute('x', n.x+29); bt.setAttribute('y', n.y-15);
+          bt.setAttribute('text-anchor','middle');
+          bt.setAttribute('font-size','10');
+          bt.setAttribute('font-weight','950');
+          bt.setAttribute('fill','#0d2032');
+          bt.textContent = usedCount.get(n.prefix);
+          svg.appendChild(bt);
+        }
+      }
+    });
+
+    // labels
+    const begin = document.createElementNS(NS,'rect');
+    begin.setAttribute('x', width/2 - 64); begin.setAttribute('y', 10);
+    begin.setAttribute('width', 128); begin.setAttribute('height', 28);
+    begin.setAttribute('rx', 10);
+    begin.setAttribute('fill','rgba(255,255,255,.06)');
+    begin.setAttribute('stroke','rgba(176,213,255,.12)');
+    svg.appendChild(begin);
+    const bt = document.createElementNS(NS,'text');
+    bt.setAttribute('x', width/2); bt.setAttribute('y', 30);
+    bt.setAttribute('text-anchor','middle');
+    bt.setAttribute('font-size','14');
+    bt.setAttribute('font-weight','950');
+    bt.setAttribute('fill','#e8f5ff');
+    bt.setAttribute('class','rootText');
+    bt.textContent = 'START';
+    svg.appendChild(bt);
+
+    // orb
+    const orb = document.createElementNS(NS,'circle');
+    orb.setAttribute('r','10');
+    orb.setAttribute('fill','url(#goldOrb)');
+    orb.setAttribute('stroke','#fff7d6');
+    orb.setAttribute('stroke-width','2');
+    orb.setAttribute('filter','url(#glowStrong)');
+    orb.setAttribute('opacity','0');
+    svg.appendChild(orb);
+    treeMap.orb = orb;
+  }
+
+  function resetTreeGlow(){
+    treeMap.edges.forEach(edge => { edge.glow.setAttribute('opacity','0'); edge.glow.setAttribute('stroke-width','6'); });
+    treeMap.nodes.forEach(node => {
+      node.circle.setAttribute('stroke-width', node.baseStroke);
+      node.circle.setAttribute('filter', node.baseFilter);
+    });
+    if(treeMap.orb) treeMap.orb.setAttribute('opacity','0');
+  }
+
+  function highlightNode(key){
+    const node = treeMap.nodes.get(key);
+    if(!node) return;
+    node.circle.setAttribute('stroke-width','5');
+    node.circle.setAttribute('filter','url(#glowStrong)');
+  }
+
+  async function animateOrb(x1,y1,x2,y2,duration){
+    if(!treeMap.orb) return;
+    const start = performance.now();
+    treeMap.orb.setAttribute('opacity','1');
+    return new Promise(resolve => {
+      function step(now){
+        const t = Math.min((now-start)/duration, 1);
+        const x = x1 + (x2-x1)*t;
+        const y = y1 + (y2-y1)*t;
+        treeMap.orb.setAttribute('cx', x);
+        treeMap.orb.setAttribute('cy', y);
+        if(t < 1) requestAnimationFrame(step);
+        else resolve();
+      }
+      treeMap.orb.setAttribute('cx', x1);
+      treeMap.orb.setAttribute('cy', y1);
+      requestAnimationFrame(step);
+    });
+  }
+
+  async function animateTreeSymbol(prefix, duration){
+    const edge = treeMap.edges.get(prefix);
+    if(!edge) { await wait(duration); return; }
+    const parentKey = prefix.slice(0, -1) || 'root';
+    highlightNode(parentKey);
+    if(edge.glow){ edge.glow.setAttribute('opacity','1'); edge.glow.setAttribute('stroke-width','8'); }
+    await animateOrb(edge.x1, edge.y1, edge.x2, edge.y2, duration);
+    highlightNode(prefix);
+  }
+
+  // ─── audio ──────────────────────────────────────────────────────────
+  async function ensureAudio(){
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') await audioCtx.resume();
+    audioState.textContent = 'active';
+  }
+
+  async function beep(duration, freq){
+    await ensureAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.value = 0.0001;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+    gain.gain.exponentialRampToValueAtTime(0.15, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration/1000);
+    osc.start(now);
+    osc.stop(now + duration/1000 + 0.03);
+    await wait(duration);
+  }
+
+  async function playSymbol(bit, prefix){
+    if(stopFlag) return;
+    const isDot = bit === '0';
+    const duration = isDot ? 140 : 360;
+    const freq = isDot ? 860 : 520;
+    // lamp
+    if(isDot){ dotLamp.className = 'lamp on-dot'; dashLamp.className = 'lamp'; }
+    else { dashLamp.className = 'lamp on-dash'; dotLamp.className = 'lamp'; }
+    statusLed.className = `led on-${isDot ? 'dot' : 'dash'}`;
+    setPulse(isDot ? 'dot' : 'dash');
+    statusText.textContent = isDot ? 'DOT · 0' : 'DASH — 1';
+    if(prefix) await Promise.all([animateTreeSymbol(prefix, duration), beep(duration, freq)]);
+    else await beep(duration, freq);
+    // reset briefly
+    await wait(80);
+    setPulse(null);
+    statusLed.className = 'led';
+    dotLamp.className = 'lamp';
+    dashLamp.className = 'lamp';
+  }
+
+  async function playEmit(item, idx, total){
+    if(stopFlag) return;
+    const token = item.token === ' ' ? '␣' : item.token;
+    currentToken.textContent = token;
+    currentIndex.textContent = `${idx+1} / ${total}`;
+    if(playProgress) playProgress.style.width = `${Math.round(((idx + 1) / Math.max(total, 1)) * 100)}%`;
+    currentType.textContent = item.type === 'token' ? 'Direct' : 'ESC raw';
+    // highlight log entry
+    bitstreamLog.querySelectorAll('.emit-log.active').forEach(el => el.classList.remove('active'));
+    const el = bitstreamLog.querySelector(`.emit-log[data-idx="${idx}"]`);
+    if(el) el.classList.add('active');
+    resetTreeGlow();
+    let prefix = '';
+    for(let i=0; i<item.bits.length; i++){
+      if(stopFlag) break;
+      const bit = item.bits[i];
+      if(i < 4){
+        prefix += bit;
+        await playSymbol(bit, prefix);
+      } else {
+        await playSymbol(bit, null);
+      }
+    }
+    if(item.code) highlightNode(item.code);
+    await wait(140);
+  }
+
+  async function playSequence(oneStep=false){
+    if(!latest){ runPipeline(); return; }
+    stopFlag = false;
+    const emitted = latest.encoded.emitted;
+    const total = emitted.length;
+    let start = oneStep ? playbackIndex : 0;
+    if(start >= total) start = 0;
+    statusText.textContent = oneStep ? 'Step' : 'PLAYING';
+    kpiState.textContent = 'PLAYING';
+    for(let i=start; i<total; i++){
+      if(stopFlag) break;
+      playbackIndex = i;
+      await playEmit(emitted[i], i, total);
+      if(oneStep){ playbackIndex = Math.min(i+1, total); break; }
+      await wait(60);
+    }
+    if(!stopFlag){
+      statusText.textContent = 'Done';
+      kpiState.textContent = 'ENCODED';
+    }
+    if(!oneStep) playbackIndex = 0;
+    resetSignalUi();
+  }
+
+  // ─── main pipeline ──────────────────────────────────────────────────
+  function runPipeline(){
+    const vi = viInput.value;
+    if(converterBadge && window.CVNSSConverter) converterBadge.textContent = `CVNSS4.0 ${window.CVNSSConverter.VERSION || 'PRO'}`;
+    const cv = viToCvnssDemo(vi);
+    const clean = cleanBase27(cv);
+    const model = buildTree(clean);
+    const encoded = encodeDP(clean, model.codeToToken);
+    const decoded = decodeStream(encoded.bits, model.codeToToken);
+    latest = { clean, model, encoded, decoded };
+    playbackIndex = 0;
+    renderStats(clean, encoded, decoded, model.selected);
+    renderTokenTable(model);
+    renderOutputs(clean, encoded, decoded);
+    buildTreeSvg(model, encoded.emitted);
+    resetSignalUi();
+    // highlight pipeline step
+    const steps = $('pipelineFlow').querySelectorAll('.step');
+    steps.forEach((el, i) => {
+      el.classList.remove('active', 'done');
+      if(i < 6) el.classList.add('done');
+      if(i === 6) el.classList.add('active');
+    });
+  }
+
+
+  async function copyText(value, label){
+    const text = String(value || '');
+    if(!text.trim()) return;
+    try {
+      if(navigator.clipboard && window.isSecureContext){
+        await navigator.clipboard.writeText(text);
+      } else {
+        const tmp = document.createElement('textarea');
+        tmp.value = text;
+        tmp.setAttribute('readonly', '');
+        tmp.style.position = 'fixed';
+        tmp.style.opacity = '0';
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand('copy');
+        tmp.remove();
+      }
+      statusText.textContent = `Copied ${label}`;
+      kpiState.textContent = 'COPIED';
+      await wait(650);
+      if(!stopFlag) kpiState.textContent = 'READY';
+    } catch(err) {
+      statusText.textContent = 'Copy failed';
+      console.warn(err);
+    }
+  }
+
+  // ─── paper mode ────────────────────────────────────────────────────
+  function togglePaper(){
+    document.body.classList.toggle('paper-mode');
+  }
+
+  // ─── export SVG ────────────────────────────────────────────────────
+  function exportSvg(){
+    const svg = treeSvg;
+    const serializer = new XMLSerializer();
+    const source = serializer.serializeToString(svg);
+    const blob = new Blob([source], {type:'image/svg+xml;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'morse_tree.svg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  // ─── export PNG ────────────────────────────────────────────────────
+  async function exportPng(){
+    if(!window.html2canvas){
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    try {
+      const canvas = await html2canvas($('app'), {
+        backgroundColor: document.body.classList.contains('paper-mode') ? '#eef4fb' : '#070e1a',
+        scale: 2,
+        useCORS: true
+      });
+      canvas.toBlob(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'morse_dashboard.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, 'image/png');
+    } catch(e){ alert('Không thể xuất PNG. Kiểm tra kết nối mạng để tải thư viện.'); }
+  }
+
+  // ─── init ──────────────────────────────────────────────────────────
+  function init(){
+    renderPipeline();
+    initPulseBars();
+    runPipeline();
+
+    // events
+    $('btnEncode').addEventListener('click', runPipeline);
+    $('btnDemo').addEventListener('click', () => {
+      viInput.value = 'Tôi yêu Việt Nam và muốn mô phỏng cây 4 bit theo CVNSS4.0 để minh họa rõ cơ chế Bilatree-CSS bằng Morse code.';
+      runPipeline();
+    });
+    $('btnPlay').addEventListener('click', ()=>{ playSequence(false); });
+    $('btnStep').addEventListener('click', ()=>{ playSequence(true); });
+    $('btnStop').addEventListener('click', ()=>{ stopFlag = true; resetSignalUi(); statusText.textContent = 'Stopped'; kpiState.textContent = 'STOPPED'; });
+    $('btnPlaySmall').addEventListener('click', ()=>{ playSequence(false); });
+    $('btnStepSmall').addEventListener('click', ()=>{ playSequence(true); });
+    $('btnStopSmall').addEventListener('click', ()=>{ stopFlag = true; resetSignalUi(); statusText.textContent = 'Stopped'; kpiState.textContent = 'STOPPED'; });
+    $('btnPaperMode').addEventListener('click', togglePaper);
+    $('btnCopyCvnss').addEventListener('click', ()=>copyText(cvnssInput.value, 'CVNSS'));
+    $('btnCopyBits').addEventListener('click', ()=>copyText(latest ? latest.encoded.bits : '', 'bitstream'));
+    $('btnClear').addEventListener('click', ()=>{ viInput.value = ''; runPipeline(); viInput.focus(); });
+    $('btnExportSvg').addEventListener('click', exportSvg);
+    $('btnExportPng').addEventListener('click', exportPng);
+    $('btnPrint').addEventListener('click', ()=>window.print());
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
